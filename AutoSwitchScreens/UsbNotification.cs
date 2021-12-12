@@ -42,6 +42,12 @@ namespace UsbNotify
             MessageEvents.MessageReceived += MessageEvents_MessageReceived;
         }
 
+
+        private static void OnBoop(string s)
+        {
+            if (Boop != null)
+                Boop(s);
+        }
         private static void MessageEvents_MessageReceived(System.Windows.Forms.Message m)
         {
             if ((WndMessage)m.Msg != WndMessage.WM_DEVICECHANGE)
@@ -49,7 +55,7 @@ namespace UsbNotify
 
             if (m.LParam == IntPtr.Zero)
             {
-                Boop("--");
+                OnBoop("--");
                 return;
             }
 
@@ -63,14 +69,7 @@ namespace UsbNotify
                         var bytes = new byte[dbh.dbch_size - (int)WM_DEVICECHANGE.SIZE_OF_DBH];
                         Marshal.Copy(m.LParam + (int)WM_DEVICECHANGE.SIZE_OF_DBH, bytes, 0, bytes.Length);
                         var name = MarshalString<DEV_BROADCAST_HDR>(dbh.dbch_size, m.LParam);
-                        if (Boop != null)
-                        {
-                            Boop(name);
-                        }
-                        else
-                        {
-                            Boop("DBT_DEVTYP_PORT = null?");
-                        }
+                        OnBoop(name);
                     }
                     break;
 
@@ -78,44 +77,37 @@ namespace UsbNotify
                     {
                         var xx = (DEV_BROADCAST_DEVICEINTERFACE)Marshal.PtrToStructure(m.LParam, typeof(DEV_BROADCAST_DEVICEINTERFACE));
                         string name = "";
-                        if (Boop != null)
+
+                        var action = "bloopy";
+
+                        if ((int)WM_DEVICECHANGE.DBT_DEVICEARRIVAL == (int)m.WParam)
                         {
-                            var action = "bloopy";
-
-                            if ((int)WM_DEVICECHANGE.DBT_DEVICEARRIVAL == (int)m.WParam)
-                                action = "connected";
-
-                            if ((int)WM_DEVICECHANGE.DBT_DEVICEREMOVECOMPLETE == (int)m.WParam)
-                                action = "removed";
-
-                            name = MarshalString<DEV_BROADCAST_DEVICEINTERFACE>(dbh.dbch_size, m.LParam);
-                            Boop($"Size - {xx.dbch_size} Name - {name} - Type :{xx.dbch_devicetype} {xx.dbcc_classguid} {action}");
-                        }
-                        else
-                        {
-                            Boop("DBT_DEVTYP_DEVICEINTERFACE = null?");
+                            action = "connected";
+                            if (KeyboardConnected != null)
+                                KeyboardConnected(name);
                         }
 
-                        if (KeyboardConnected != null)
-                            KeyboardConnected(name);
+                        if ((int)WM_DEVICECHANGE.DBT_DEVICEREMOVECOMPLETE == (int)m.WParam)
+                        {
+                            action = "removed";
+                            if (KeyboardDisconnected != null)
+                                KeyboardDisconnected(name);
+                        }
 
-                        if (KeyboardDisconnected != null)
-                            KeyboardDisconnected(name);
-
+                        name = MarshalString<DEV_BROADCAST_DEVICEINTERFACE>(dbh.dbch_size, m.LParam);
+                        OnBoop($"Size - {xx.dbch_size} Name - {name} - Type :{xx.dbch_devicetype} {xx.dbcc_classguid} {action}");
                     }
                     break;
                 case WM_DEVICECHANGE.DBT_DEVTYP_OEM:
-                    Boop($"OEM 0X{dbh.dbch_devicetype.ToString("X8")}");
+                    OnBoop($"OEM 0X{dbh.dbch_devicetype.ToString("X8")}");
                     break;
                 case WM_DEVICECHANGE.DBT_DEVTYP_VOLUME:
-                    Boop($"VOLUME 0X{dbh.dbch_devicetype.ToString("X8")}");
+                    OnBoop($"VOLUME 0X{dbh.dbch_devicetype.ToString("X8")}");
                     break;
 
                 default:
-                    {
-                        Boop($"wot! 0X{dbh.dbch_devicetype.ToString("X8")}");
-                        break;
-                    }            
+                    OnBoop($"wot! 0X{dbh.dbch_devicetype.ToString("X8")}");
+                    break;
             }
         }
 
