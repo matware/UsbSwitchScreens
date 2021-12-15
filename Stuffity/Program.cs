@@ -1,56 +1,101 @@
-﻿using System;
+﻿using Microsoft.Extensions.Hosting;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Management;
-using System.Threading;
+//using System.Threading;
 using UsbNotify;
+using Microsoft.Extensions.Configuration;
+
 namespace Stuffity
 {
     class Program
     {
-
+        static Settings settings;
+        static CapabilitiesLogic cap;
+         static MonitorLogic monLogic;
+         static VCPFeatureLogic vcpLogic;
+        public static Dictionary<string, Monitor> monitors = new Dictionary<string, Monitor>();
         static void Main(string[] args)
         {
+
+            IConfiguration config = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json")
+            .AddEnvironmentVariables()
+            .Build();
+            settings = config.GetRequiredSection("Settings").Get<Settings>();
+
+            foreach (var s in settings.Monitors)
+                Console.WriteLine($"KeyOne = {s.MonitorName} {s.InputId}");
+
             UsbNotification.RegisterUsbDeviceNotification(UsbNotification.KeyboardDeviceInterface);
-            //UsbNotification.Boop += UsbNotification_Boop;
             UsbNotification.KeyboardConnected += UsbNotification_KeyboardConnected;
             UsbNotification.KeyboardDisconnected += UsbNotification_KeyboardDisconnected;
 
-            var cap = new CapabilitiesLogic();
+            InitVcp();
 
-            var monLogic = new MonitorLogic(cap);
-            var vcpLogic = new VCPFeatureLogic();
             var mons = monLogic.GetAll();
-            
+
+            using IHost host = Host.CreateDefaultBuilder(args).Build();
             foreach (var mon in mons)
             {
-                var currentInput = new VCPFeatureModel(VCPFeature.INPUT_SOURCE, mon, vcpLogic, cap);
-                Console.WriteLine(mon.Model +$" Current Input = {currentInput.CurrentValue} ||  {currentInput.CurrentValue & 0x1f} Max = {currentInput.MaximumValue}");
-                
-                foreach (var s in mon.InputSources)
-                {
-                    var ss = s & 0x1f;                    
-                    var x = new InputSourceModel(ss, mon, vcpLogic);
-                    Console.Write($"{x.Name} {ss}");
-                    if ((currentInput.CurrentValue & 0x1f) == s)
-                        Console.WriteLine("*");
-                    else
-                        Console.WriteLine();                    
-                }
-                var a = mon.InputSources.Last();
-                
-                var selectedSource = new InputSourceModel(a, mon, vcpLogic);
-                selectedSource.SetThisAsInputSource();                
+                monitors[mon.Model] = mon;
             }
-
 
             do
             {
-                Thread.Sleep(2500);
+                System.Threading.Thread.Sleep(2500);
             } while (true);
 
 
             Console.Read();
+        }
+
+        private static void InitVcp()
+        {
+            cap = new CapabilitiesLogic();
+
+            monLogic = new MonitorLogic(cap);
+            vcpLogic = new VCPFeatureLogic();
+        }
+
+        static DateTime startListeningAgain = DateTime.Now;
+        
+        static private bool SkipForAFewSecs()
+        {
+            var now = DateTime.Now;
+            if (now > startListeningAgain)
+            {
+                startListeningAgain = startListeningAgain.AddSeconds(5);
+                return false;
+            }
+            return true;
+
+        }
+
+
+        private static void PrintMonitorStatus()
+        {
+            foreach (var mon in monitors.Values)
+            {
+                var currentInput = new VCPFeatureModel(VCPFeature.INPUT_SOURCE, mon, vcpLogic, cap);
+                Console.WriteLine(mon.Model + $" Current Input = {currentInput.CurrentValue} ||  {currentInput.CurrentValue & 0x1f} Max = {currentInput.MaximumValue}");
+
+                foreach (var source in mon.InputSources)
+                {
+                    var maskedSource = source & 0x1f;
+                    var sourceModel = new InputSourceModel(maskedSource, mon, vcpLogic);
+                    
+                    Console.Write($"{sourceModel.Name} {maskedSource}");
+
+                    if ((currentInput.CurrentValue & 0x1f) == source)
+                        Console.WriteLine("*");
+                    else
+                        Console.WriteLine();
+                }
+            }
+
+            
         }
 
         private static void UsbNotification_KeyboardDisconnected(string obj)
@@ -58,9 +103,26 @@ namespace Stuffity
             Console.WriteLine("Disconnected");
         }
 
+        
+
         private static void UsbNotification_KeyboardConnected(string obj)
         {
-            Console.WriteLine("Connected");
+            Console.WriteLine("Keyboard Connected");
+            
+            if (SkipForAFewSecs())
+                return;
+
+            foreach (var s in settings.Monitors)
+            {
+                Monitor mon;
+                if (!monitors.TryGetValue(s.MonitorName, out mon))
+                {
+                    Console.WriteLine($"oopsy, couldn't find {s.MonitorName}");
+                    continue;
+                }
+                var selectedSource = new InputSourceModel(s.InputId, mon, vcpLogic);
+                selectedSource.SetThisAsInputSource();
+            }
         }
 
         private static void UsbNotification_Boop(string obj)
