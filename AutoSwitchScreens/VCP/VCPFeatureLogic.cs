@@ -126,36 +126,7 @@ namespace UsbNotify
         {
             get
             {
-                switch (inputSource)
-                {
-                    case (uint)InputSource.ANALOG_VIDEO1:
-                        return "VGA1";
-
-                    case (uint)InputSource.ANALOG_VIDEO2:
-                        return "VGA2";
-
-                    case (uint)InputSource.DISPLAY_PORT1:
-                        return "DP1";
-
-                    case (uint)InputSource.DISPLAY_PORT2:
-                        return "DP2";
-
-                    case (uint)InputSource.DVI1:
-                        return "DVI1";
-
-                    case (uint)InputSource.DVI2:
-                        return "DVI2";
-
-                    case (uint)InputSource.HDMI1:
-                        return "HDMI1";
-
-                    case (uint)InputSource.HDMI2:
-                        return "HDMI2";
-
-                    default:
-                        return "UNKNOWN";
-                }
-
+                return ((InputSource)inputSource).ToString();
             }
         }
 

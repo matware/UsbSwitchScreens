@@ -24,9 +24,8 @@ namespace Stuffity
             .AddEnvironmentVariables()
             .Build();
             settings = config.GetRequiredSection("Settings").Get<Settings>();
-
-            foreach (var s in settings.Monitors)
-                Console.WriteLine($"KeyOne = {s.MonitorName} {s.InputId}");
+            
+            PrintSettings();
 
             UsbNotification.RegisterUsbDeviceNotification(UsbNotification.KeyboardDeviceInterface);
             UsbNotification.KeyboardConnected += UsbNotification_KeyboardConnected;
@@ -36,11 +35,10 @@ namespace Stuffity
 
             var mons = monLogic.GetAll();
 
-            using IHost host = Host.CreateDefaultBuilder(args).Build();
             foreach (var mon in mons)
-            {
                 monitors[mon.Model] = mon;
-            }
+
+            PrintMonitorStatus();
 
             do
             {
@@ -49,6 +47,13 @@ namespace Stuffity
 
 
             Console.Read();
+        }
+
+        public static void PrintSettings()
+        {
+            Console.WriteLine("Settings");
+            foreach (var s in settings.Monitors)
+                Console.WriteLine($"\t{s.MonitorName}:{s.InputId}");
         }
 
         private static void InitVcp()
@@ -79,31 +84,29 @@ namespace Stuffity
             foreach (var mon in monitors.Values)
             {
                 var currentInput = new VCPFeatureModel(VCPFeature.INPUT_SOURCE, mon, vcpLogic, cap);
-                Console.WriteLine(mon.Model + $" Current Input = {currentInput.CurrentValue} ||  {currentInput.CurrentValue & 0x1f} Max = {currentInput.MaximumValue}");
+                Console.WriteLine(mon.Model + $" Current Input = {currentInput.CurrentValue} || {currentInput.CurrentValue & 0x1f} Max = {currentInput.MaximumValue}");
 
                 foreach (var source in mon.InputSources)
                 {
                     var maskedSource = source & 0x1f;
                     var sourceModel = new InputSourceModel(maskedSource, mon, vcpLogic);
                     
-                    Console.Write($"{sourceModel.Name} {maskedSource}");
+                    Console.Write($"\t{maskedSource}\t{sourceModel.Name}");
 
                     if ((currentInput.CurrentValue & 0x1f) == source)
                         Console.WriteLine("*");
                     else
                         Console.WriteLine();
                 }
+                
+                Console.WriteLine();
             }
-
-            
         }
 
         private static void UsbNotification_KeyboardDisconnected(string obj)
         {
             Console.WriteLine("Disconnected");
         }
-
-        
 
         private static void UsbNotification_KeyboardConnected(string obj)
         {

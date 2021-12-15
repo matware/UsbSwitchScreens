@@ -54,8 +54,6 @@ namespace UsbNotify
                 result = GetCapabilitiesStringLength(monitor.PhysicalMonitor.hPhysicalMonitor, ref dwCapabilitiesStringLengthInCharacters);
             }
 
-
-            Console.WriteLine(result);
             pszASCIICapabilitiesString = new char[dwCapabilitiesStringLengthInCharacters];
 
             result = CapabilitiesRequestAndCapabilitiesReply(monitor.PhysicalMonitor.hPhysicalMonitor, pszASCIICapabilitiesString, dwCapabilitiesStringLengthInCharacters);
