@@ -3,9 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31702.278
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AutoSwitchScreens", "AutoSwitchScreens\AutoSwitchScreens.csproj", "{94B667E6-3DB7-4111-B0FE-F84E1C7F9534}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonitorControl", "AutoSwitchScreens\MonitorControl.csproj", "{94B667E6-3DB7-4111-B0FE-F84E1C7F9534}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Stuffity", "Stuffity\Stuffity.csproj", "{E5F7EFE3-CACA-43BE-A18D-B8168A884C21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonitorSwitcher", "Stuffity\MonitorSwitcher.csproj", "{E5F7EFE3-CACA-43BE-A18D-B8168A884C21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UsbDetection", "UsbDetection\UsbDetection.csproj", "{A96D1D5E-10E3-4F99-8687-F9FA61B78989}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{E5F7EFE3-CACA-43BE-A18D-B8168A884C21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E5F7EFE3-CACA-43BE-A18D-B8168A884C21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E5F7EFE3-CACA-43BE-A18D-B8168A884C21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A96D1D5E-10E3-4F99-8687-F9FA61B78989}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A96D1D5E-10E3-4F99-8687-F9FA61B78989}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A96D1D5E-10E3-4F99-8687-F9FA61B78989}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A96D1D5E-10E3-4F99-8687-F9FA61B78989}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

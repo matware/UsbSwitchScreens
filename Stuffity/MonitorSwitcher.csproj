@@ -16,7 +16,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\AutoSwitchScreens\AutoSwitchScreens.csproj" />
+    <ProjectReference Include="..\AutoSwitchScreens\MonitorControl.csproj" />
+    <ProjectReference Include="..\UsbDetection\UsbDetection.csproj" />
   </ItemGroup>
 
 </Project>
