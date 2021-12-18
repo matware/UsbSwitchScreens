@@ -16,7 +16,7 @@ namespace MonitorSwitcher
         {
             ReadSettings();
 
-            var consoleTaskBar = new ConsoleTaskBar();
+            var taskBarMenu = new ConsoleTaskBar();
             var switchProfiles = new Dictionary<string, Action>();
             
             foreach(var profileName in settings.Profiles.Keys)
@@ -24,7 +24,7 @@ namespace MonitorSwitcher
                 switchProfiles[profileName] = () => { switcher.SwitchTo(settings.Profiles[profileName]); };
             }
 
-            consoleTaskBar.Init(switchProfiles);
+            taskBarMenu.Init(switchProfiles);
             
             switcher.Init();
 
@@ -34,7 +34,7 @@ namespace MonitorSwitcher
             UsbNotification.RegisterUsbDeviceNotification(UsbNotification.KeyboardDeviceInterface);
             UsbNotification.KeyboardConnected += UsbNotification_KeyboardConnected;
             UsbNotification.KeyboardDisconnected += UsbNotification_KeyboardDisconnected;
-
+            taskBarMenu.HideConsole();
             Application.Run();
         }
 

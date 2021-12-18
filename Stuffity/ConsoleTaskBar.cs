@@ -8,6 +8,7 @@ namespace MonitorSwitcher
 {
     public class ConsoleTaskBar
     {
+        ToolStripItem showHideItem;
         private NotifyIcon notifyIcon = new NotifyIcon();
         public ConsoleTaskBar()
         {
@@ -28,7 +29,8 @@ namespace MonitorSwitcher
                 contextMenu.Items.Add("-");
             }
 
-            contextMenu.Items.Add("Hide", null, ToggleClicked);
+            showHideItem = contextMenu.Items.Add("Hide", null, ToggleClicked);
+            
             contextMenu.Items.Add("Exit", null, (s, e) => { Application.Exit(); });
             notifyIcon.ContextMenuStrip = contextMenu;
 
@@ -45,15 +47,29 @@ namespace MonitorSwitcher
         static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
         private static bool showing = true;
-        static private void ToggleClicked(object sender, EventArgs e)
+        private void ToggleClicked(object sender, EventArgs e)
         {
-            showing = !showing;
-            SetConsoleWindowVisibility(showing);
-            var tsi = sender as ToolStripItem;
-            tsi.Text = showing ? "Hide" : "Show";
+            Switch(!showing);
         }
 
-        public static void SetConsoleWindowVisibility(bool visible)
+        private void Switch(bool newState)
+        {
+            showing = newState;
+            SetConsoleWindowVisibility(showing);            
+            showHideItem.Text = showing ? "Hide" : "Show";
+        }
+
+        public void HideConsole()
+        {
+            Switch(false);
+        }
+
+        public void ShowConsole()
+        {
+            Switch(true);
+        }
+
+        private void SetConsoleWindowVisibility(bool visible)
         {
             IntPtr hWnd = FindWindow(null, Console.Title);
             if (hWnd != IntPtr.Zero)
