@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Stuffity
+namespace MonitorSwitcher
 {
     public class Settings
     {

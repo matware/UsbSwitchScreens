@@ -16,7 +16,7 @@ namespace UsbNotify
         public static readonly Guid GUID_DEVINTERFACE_HID = new Guid("4D1E55B2-F16F-11CF-88CB-001111000030");
         private static IntPtr notificationHandle;
 
-        public static event Action<string> Boop;
+        public static event Action<string> UsbChanged;
 
         public static event Action<string> KeyboardConnected;
         public static event Action<string> KeyboardDisconnected;
@@ -43,10 +43,10 @@ namespace UsbNotify
         }
 
 
-        private static void OnBoop(string s)
+        private static void OnUsbDevicesChanged(string s)
         {
-            if (Boop != null)
-                Boop(s);
+            if (UsbChanged != null)
+                UsbChanged(s);
         }
         private static void MessageEvents_MessageReceived(System.Windows.Forms.Message m)
         {
@@ -55,7 +55,7 @@ namespace UsbNotify
 
             if (m.LParam == IntPtr.Zero)
             {
-                OnBoop("--");
+                OnUsbDevicesChanged("--");
                 return;
             }
 
@@ -69,7 +69,7 @@ namespace UsbNotify
                         var bytes = new byte[dbh.dbch_size - (int)WM_DEVICECHANGE.SIZE_OF_DBH];
                         Marshal.Copy(m.LParam + (int)WM_DEVICECHANGE.SIZE_OF_DBH, bytes, 0, bytes.Length);
                         var name = MarshalString<DEV_BROADCAST_HDR>(dbh.dbch_size, m.LParam);
-                        OnBoop(name);
+                        OnUsbDevicesChanged(name);
                     }
                     break;
 
@@ -95,18 +95,18 @@ namespace UsbNotify
                         }
 
                         name = MarshalString<DEV_BROADCAST_DEVICEINTERFACE>(dbh.dbch_size, m.LParam);
-                        OnBoop($"Size - {xx.dbch_size} Name - {name} - Type :{xx.dbch_devicetype} {xx.dbcc_classguid} {action}");
+                        OnUsbDevicesChanged($"Size - {xx.dbch_size} Name - {name} - Type :{xx.dbch_devicetype} {xx.dbcc_classguid} {action}");
                     }
                     break;
                 case WM_DEVICECHANGE.DBT_DEVTYP_OEM:
-                    OnBoop($"OEM 0X{dbh.dbch_devicetype.ToString("X8")}");
+                    OnUsbDevicesChanged($"OEM 0X{dbh.dbch_devicetype.ToString("X8")}");
                     break;
                 case WM_DEVICECHANGE.DBT_DEVTYP_VOLUME:
-                    OnBoop($"VOLUME 0X{dbh.dbch_devicetype.ToString("X8")}");
+                    OnUsbDevicesChanged($"VOLUME 0X{dbh.dbch_devicetype.ToString("X8")}");
                     break;
 
                 default:
-                    OnBoop($"wot! 0X{dbh.dbch_devicetype.ToString("X8")}");
+                    OnUsbDevicesChanged($"wot! 0X{dbh.dbch_devicetype.ToString("X8")}");
                     break;
             }
         }
@@ -147,23 +147,17 @@ namespace UsbNotify
             SIZE_OF_DBH = 12,   // sizeof(DEV_BROADCAST_HDR)
         }
 
-        public enum Change
-        {
-
-        }
-
         [StructLayout(LayoutKind.Sequential)]
-        public struct DEV_BROADCAST_HDR
+        internal struct DEV_BROADCAST_HDR
         {
             internal UInt32 dbch_size;
             internal UInt32 dbch_devicetype;
             internal UInt32 dbch_reserved;
         };
-
       
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public struct DEV_BROADCAST_OEM
+        internal struct DEV_BROADCAST_OEM
         {
             internal UInt32 dbch_size;
             internal UInt32 dbch_devicetype;
@@ -172,10 +166,7 @@ namespace UsbNotify
             internal uint dbco_suppfunc;
         };
 
-        public static void RegisterUsbDeviceNotification(IntPtr windowHandle)
-        {
-            RegisterUsbDeviceNotification(windowHandle, GUID_DEVINTERFACE_USB_DEVICE);
-        }
+       
         /// <summary>
         /// Registers a window to receive notifications when USB devices are plugged or unplugged.
         /// </summary>
@@ -229,20 +220,6 @@ namespace UsbNotify
             internal int dbch_reserved;
             internal Guid dbcc_classguid;
             internal short Name;
-            //[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 255)]
-            //internal string dbcc_name;
-            //[MarshalAs(UnmanagedType.ByValArray, SizeConst = 180)]
-            //internal byte[] dbcc_name;
-        };
-
-        //[StructLayout(LayoutKind.Sequential)]
-        //private struct DEV_BROADCAST_DEVICEINTERFACE
-        //{
-        //    internal int Size;
-        //    internal int DeviceType;
-        //    internal int Reserved;
-        //    internal Guid ClassGuid;
-        //    internal short Name;
-        //}
+        };    
     }
 }
