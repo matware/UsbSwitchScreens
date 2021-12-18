@@ -2,23 +2,29 @@
 using Microsoft.Extensions.Configuration;
 using System.Windows.Forms;
 using System.Text;
+using System;
+using System.Collections.Generic;
 
 namespace MonitorSwitcher
 {
     class Program
     {
         static Settings settings;
-        static MonitorSwitcher switcher;
-        static ConsoleHelper consoleHelper;
+        static MonitorSwitcher switcher = new MonitorSwitcher();
+        static ConsoleHelper consoleHelper = new ConsoleHelper();
         static void Main(string[] args)
         {
-            consoleHelper = new ConsoleHelper();
-            var consoleTaskBark = new ConsoleTaskBar();
-            consoleTaskBark.Init();
-
             ReadSettings();
+
+            var consoleTaskBar = new ConsoleTaskBar();
+            var switchProfiles = new Dictionary<string, Action>();
             
-            switcher = new MonitorSwitcher();
+            foreach(var profileName in settings.Profiles.Keys)
+            {
+                switchProfiles[profileName] = () => { switcher.SwitchTo(settings.Profiles[profileName]); };
+            }
+
+            consoleTaskBar.Init(switchProfiles);
             
             switcher.Init();
 
@@ -48,9 +54,14 @@ namespace MonitorSwitcher
         public static void PrintSettings()
         {
             var sb = new StringBuilder();
-            sb.AppendLine("Settings");
-            foreach (var s in settings.Monitors)
-                sb.AppendLine($"\t{s.MonitorName}:{s.InputId}");
+            sb.AppendLine("Settings:");
+            sb.AppendLine($"\tDefault Profile {settings.DefaultProfile}");
+            foreach (var s in settings.Profiles)
+            {
+                sb.AppendLine($"\t {s.Key}");
+                foreach(var m in s.Value)
+                sb.AppendLine($"\t\t{m.MonitorName}:{m.InputId}");
+            }
 
             consoleHelper.WriteInfo(sb.ToString());
         }
@@ -63,7 +74,7 @@ namespace MonitorSwitcher
         private static void UsbNotification_KeyboardConnected(string obj)
         {
             consoleHelper.WriteInfo("Keyboard Connected\n");
-            switcher.SwitchTo(settings.Monitors);
+            switcher.SwitchTo(settings.GetDefaultProfile());
         }
     }
 }

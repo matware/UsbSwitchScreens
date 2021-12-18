@@ -2,6 +2,7 @@
 using System.Windows.Forms;
 using System.Drawing;
 using System.Runtime.InteropServices;
+using System.Collections.Generic;
 
 namespace MonitorSwitcher
 {
@@ -13,9 +14,19 @@ namespace MonitorSwitcher
             
         }
 
-        public void Init()
+        public void Init(Dictionary<string,Action> menuItems)
         {
             var contextMenu = new ContextMenuStrip();
+
+            if(menuItems != null && menuItems.Count > 0)
+            {
+                foreach(var key in menuItems.Keys)
+                {
+                    contextMenu.Items.Add(key, null, (s,e)=> { menuItems[key]();});
+                }
+
+                contextMenu.Items.Add("-");
+            }
 
             contextMenu.Items.Add("Hide", null, ToggleClicked);
             contextMenu.Items.Add("Exit", null, (s, e) => { Application.Exit(); });

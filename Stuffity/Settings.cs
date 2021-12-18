@@ -4,7 +4,13 @@ namespace MonitorSwitcher
 {
     public class Settings
     {
-        public List<MonitorSetting> Monitors{get;set;}      
+        public string DefaultProfile { get; set; }
+        public Dictionary<string,List<MonitorSetting>> Profiles{get;set;}      
+
+        public List<MonitorSetting> GetDefaultProfile()
+        {
+            return Profiles[DefaultProfile];
+        }
     }
 
     public class MonitorSetting
