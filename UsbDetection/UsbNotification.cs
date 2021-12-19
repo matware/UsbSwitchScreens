@@ -50,71 +50,86 @@ namespace UsbNotify
         }
         private static void MessageEvents_MessageReceived(System.Windows.Forms.Message m)
         {
-            if ((WndMessage)m.Msg != WndMessage.WM_DEVICECHANGE)
-                return;
-
-            if (m.LParam == IntPtr.Zero)
+            try
             {
-                OnUsbDevicesChanged("--");
-                return;
-            }
+                if ((WndMessage)m.Msg != WndMessage.WM_DEVICECHANGE)
+                    return;
 
-            var dbh = (DEV_BROADCAST_HDR)Marshal.PtrToStructure(m.LParam, typeof(DEV_BROADCAST_HDR));
+                if (m.LParam == IntPtr.Zero)
+                {
+                    OnUsbDevicesChanged("--");
+                    return;
+                }
 
-            switch ((WM_DEVICECHANGE)dbh.dbch_devicetype)
+                var dbh = (DEV_BROADCAST_HDR)Marshal.PtrToStructure(m.LParam, typeof(DEV_BROADCAST_HDR));
+
+                switch ((WM_DEVICECHANGE)dbh.dbch_devicetype)
+                {
+
+                    case WM_DEVICECHANGE.DBT_DEVTYP_PORT:
+                        {
+                            var bytes = new byte[dbh.dbch_size - (int)WM_DEVICECHANGE.SIZE_OF_DBH];
+                            Marshal.Copy(m.LParam + (int)WM_DEVICECHANGE.SIZE_OF_DBH, bytes, 0, bytes.Length);
+                            var name = MarshalString<DEV_BROADCAST_HDR>(dbh.dbch_size, m.LParam);
+                            OnUsbDevicesChanged(name);
+                        }
+                        break;
+
+                    case WM_DEVICECHANGE.DBT_DEVTYP_DEVICEINTERFACE:
+                        {
+                            var xx = (DEV_BROADCAST_DEVICEINTERFACE)Marshal.PtrToStructure(m.LParam, typeof(DEV_BROADCAST_DEVICEINTERFACE));
+                            string name = "";
+
+                            var action = "bloopy";
+
+                            if ((int)WM_DEVICECHANGE.DBT_DEVICEARRIVAL == (int)m.WParam)
+                            {
+                                action = "connected";
+                                if (KeyboardConnected != null)
+                                    KeyboardConnected(name);
+                            }
+
+                            if ((int)WM_DEVICECHANGE.DBT_DEVICEREMOVECOMPLETE == (int)m.WParam)
+                            {
+                                action = "removed";
+                                if (KeyboardDisconnected != null)
+                                    KeyboardDisconnected(name);
+                            }
+
+                            name = MarshalString<DEV_BROADCAST_DEVICEINTERFACE>(dbh.dbch_size, m.LParam);
+                            OnUsbDevicesChanged($"Size - {xx.dbch_size} Name - {name} - Type :{xx.dbch_devicetype} {xx.dbcc_classguid} {action}");
+                        }
+                        break;
+                    case WM_DEVICECHANGE.DBT_DEVTYP_OEM:
+                        OnUsbDevicesChanged($"OEM 0X{dbh.dbch_devicetype.ToString("X8")}");
+                        break;
+                    case WM_DEVICECHANGE.DBT_DEVTYP_VOLUME:
+                        OnUsbDevicesChanged($"VOLUME 0X{dbh.dbch_devicetype.ToString("X8")}");
+                        break;
+
+                    default:
+                        OnUsbDevicesChanged($"wot! 0X{dbh.dbch_devicetype.ToString("X8")}");
+                        break;
+                }
+            }catch(Exception ex)
             {
-
-                case WM_DEVICECHANGE.DBT_DEVTYP_PORT:
-                    {
-                        var bytes = new byte[dbh.dbch_size - (int)WM_DEVICECHANGE.SIZE_OF_DBH];
-                        Marshal.Copy(m.LParam + (int)WM_DEVICECHANGE.SIZE_OF_DBH, bytes, 0, bytes.Length);
-                        var name = MarshalString<DEV_BROADCAST_HDR>(dbh.dbch_size, m.LParam);
-                        OnUsbDevicesChanged(name);
-                    }
-                    break;
-
-                case WM_DEVICECHANGE.DBT_DEVTYP_DEVICEINTERFACE:
-                    {
-                        var xx = (DEV_BROADCAST_DEVICEINTERFACE)Marshal.PtrToStructure(m.LParam, typeof(DEV_BROADCAST_DEVICEINTERFACE));
-                        string name = "";
-
-                        var action = "bloopy";
-
-                        if ((int)WM_DEVICECHANGE.DBT_DEVICEARRIVAL == (int)m.WParam)
-                        {
-                            action = "connected";
-                            if (KeyboardConnected != null)
-                                KeyboardConnected(name);
-                        }
-
-                        if ((int)WM_DEVICECHANGE.DBT_DEVICEREMOVECOMPLETE == (int)m.WParam)
-                        {
-                            action = "removed";
-                            if (KeyboardDisconnected != null)
-                                KeyboardDisconnected(name);
-                        }
-
-                        name = MarshalString<DEV_BROADCAST_DEVICEINTERFACE>(dbh.dbch_size, m.LParam);
-                        OnUsbDevicesChanged($"Size - {xx.dbch_size} Name - {name} - Type :{xx.dbch_devicetype} {xx.dbcc_classguid} {action}");
-                    }
-                    break;
-                case WM_DEVICECHANGE.DBT_DEVTYP_OEM:
-                    OnUsbDevicesChanged($"OEM 0X{dbh.dbch_devicetype.ToString("X8")}");
-                    break;
-                case WM_DEVICECHANGE.DBT_DEVTYP_VOLUME:
-                    OnUsbDevicesChanged($"VOLUME 0X{dbh.dbch_devicetype.ToString("X8")}");
-                    break;
-
-                default:
-                    OnUsbDevicesChanged($"wot! 0X{dbh.dbch_devicetype.ToString("X8")}");
-                    break;
+                Console.WriteLine($"Opps something went wrong with a usb even. \n{ex}");
             }
         }
 
         private static string MarshalString<T>(uint messageSize, IntPtr lparam)
         {
             int sizeofStruct = Marshal.SizeOf<T>();
-            var bytes = new byte[messageSize - sizeofStruct];
+            var size = messageSize - sizeofStruct;
+            
+            if (size < 0)
+                throw new ArgumentOutOfRangeException($"Message is is wack sizeofStruct:{sizeofStruct}, messageSize{messageSize}");
+
+            if(size > 2048)
+                throw new ArgumentOutOfRangeException($"Message is is wack sizeofStruct:{sizeofStruct}, messageSize{messageSize}");
+            
+            var bytes = new byte[size];
+
             Marshal.Copy(lparam + sizeofStruct - sizeof(short) /*This is the string pointer itself*/, bytes, 0, bytes.Length);
             StringBuilder sb = new StringBuilder();
             foreach(var b in bytes) 
