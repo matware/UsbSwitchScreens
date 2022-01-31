@@ -26,10 +26,27 @@ namespace MonitorSwitcher
                 monitors[mon.Model] = mon;
         }
 
+        private bool CheckMonitorsExist(IEnumerable<MonitorSetting> sources)
+        {
+            foreach (var s in sources)
+            {
+                Monitor mon;
+                if (!monitors.TryGetValue(s.MonitorName, out mon))
+                {
+                    Console.WriteLine($"oopsy, couldn't find {s.MonitorName}");
+                    return false;
+                }
+            }
+            return true;
+        }
+
         public void SwitchTo(IEnumerable<MonitorSetting> sources)
         {
             if (SkipForAFewSecs())
                 return;
+
+            if (!CheckMonitorsExist(sources))
+                Init();
 
             foreach (var s in sources)
             {

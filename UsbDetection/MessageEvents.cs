@@ -36,8 +36,7 @@ namespace UsbNotify
                 if (_window == null)
                 {
                     _context = AsyncOperationManager.SynchronizationContext;
-                    using (ManualResetEvent mre =
-                          new ManualResetEvent(false))
+                    using (ManualResetEvent mre = new ManualResetEvent(false))
                     {
                         Thread t = new Thread((ThreadStart)delegate
                         {
