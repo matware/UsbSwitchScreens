@@ -251,6 +251,11 @@ namespace UsbNotify
         public List<uint> Capabilitys { get; set; }
         public List<uint> InputSources { get; set; }
         public List<uint> ColorPresets { get; set; }
+
+        public override string ToString()
+        {
+            return $"{Model}: {PhysicalMonitor.szPhysicalMonitorDescription}";
+        }
     }
 
 

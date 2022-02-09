@@ -81,7 +81,7 @@ namespace UsbNotify
 
         public void Execute(object parameter)
         {
-            inputSourceModel.SetThisAsInputSource();
+            inputSourceModel.Select();
         }
     }
 
@@ -132,9 +132,14 @@ namespace UsbNotify
 
         public ChangeInputSourceCommand ChangeInputSourceCommand { get; }
 
-        public void SetThisAsInputSource()
+        public bool Select()
         {
-            vcpFeatureLogic.SetVCPFeature(monitor, VCPFeature.INPUT_SOURCE, inputSource);
+            if(!vcpFeatureLogic.SetVCPFeature(monitor, VCPFeature.INPUT_SOURCE, inputSource))
+            {
+                Console.Write($"Failed to switch to source {inputSource} on monitor {monitor}");
+                return false;
+            }
+            return true;
         }
 
     }

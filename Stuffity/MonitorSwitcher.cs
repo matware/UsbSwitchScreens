@@ -30,8 +30,7 @@ namespace MonitorSwitcher
         {
             foreach (var s in sources)
             {
-                Monitor mon;
-                if (!monitors.TryGetValue(s.MonitorName, out mon))
+                if (!monitors.ContainsKey(s.MonitorName))
                 {
                     Console.WriteLine($"oopsy, couldn't find {s.MonitorName}");
                     return false;
@@ -40,13 +39,16 @@ namespace MonitorSwitcher
             return true;
         }
 
-        public void SwitchTo(IEnumerable<MonitorSetting> sources)
+        public void SwitchTo(IEnumerable<MonitorSetting> sources, int depth = 0)
         {
             if (SkipForAFewSecs())
                 return;
 
             if (!CheckMonitorsExist(sources))
                 Init();
+
+            bool switchFailed = false;
+
 
             foreach (var s in sources)
             {
@@ -56,9 +58,20 @@ namespace MonitorSwitcher
                     Console.WriteLine($"oopsy, couldn't find {s.MonitorName}");
                     continue;
                 }
-                var selectedSource = new InputSourceModel(s.InputId, mon, vcpLogic);
-                selectedSource.SetThisAsInputSource();
+                var source = new InputSourceModel(s.InputId, mon, vcpLogic);
+                if (source.Select())
+                    continue;
+                switchFailed = true;
             }
+
+            if (!switchFailed)
+                return;
+
+            if (depth >= 2) // Don't recurse too far
+                return;
+
+            Init();
+            SwitchTo(sources, ++depth);
         }
 
         private bool SkipForAFewSecs()

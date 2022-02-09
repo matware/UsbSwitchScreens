@@ -18,8 +18,6 @@ namespace UsbNotify
 
         public IEnumerable<Monitor> GetAll()
         {
-
-
             var physicalMonitors = new List<Monitor>();
             MonitorEnumProc callback = (IntPtr hDesktop, IntPtr hdc, ref Rect r, int d) =>
             {
