@@ -4,11 +4,12 @@ using System.Text;
 
 namespace UsbNotify
 {
-    public static class UsbNotification
+    public static partial class UsbNotification
     {
         public const int DbtDevicearrival = 0x8000; // system detected a new device        
         public const int DbtDeviceremovecomplete = 0x8004; // device is gone      
-        
+        const int DEVICE_NOTIFY_ALL_INTERFACE_CLASSES = 0x00000004;
+        const int DEVICE_NOTIFY_GUID = 0x00000000;
         private const int DBT_DEVTYP_DEVICEINTERFACE = 5;
         public static readonly Guid GUID_DEVINTERFACE_USB_DEVICE = new Guid("A5DCBF10-6530-11D2-901F-00C04FB951ED"); // USB devices
         public static readonly Guid KeyboardDeviceInterface = new Guid("884b96c3-56ef-11d1-bc8c-00a0c91405dd"); // Keyboard
@@ -42,12 +43,12 @@ namespace UsbNotify
             MessageEvents.MessageReceived += MessageEvents_MessageReceived;
         }
 
-
         private static void OnUsbDevicesChanged(string s)
         {
             if (UsbChanged != null)
                 UsbChanged(s);
         }
+
         private static void MessageEvents_MessageReceived(System.Windows.Forms.Message m)
         {
             try
@@ -140,45 +141,8 @@ namespace UsbNotify
             }
 
             return sb.ToString();
-        }
-
-       
-
-        public enum WM_DEVICECHANGE
-        {
-            // full list: https://docs.microsoft.com/en-us/windows/win32/devio/wm-devicechange
-            DBT_DEVICEARRIVAL = 0x8000,             // A device or piece of media has been inserted and is now available.
-            DBT_DEVICEREMOVECOMPLETE = 0x8004,      // A device or piece of media has been removed.
-
-            DBT_DEVTYP_DEVICEINTERFACE = 0x00000005,    // Class of devices. This structure is a DEV_BROADCAST_DEVICEINTERFACE structure.
-            DBT_DEVTYP_HANDLE = 0x00000006,             // File system handle. This structure is a DEV_BROADCAST_HANDLE structure.
-            DBT_DEVTYP_OEM = 0x00000000,                // OEM- or IHV-defined device type. This structure is a DEV_BROADCAST_OEM structure.
-            DBT_DEVTYP_PORT = 0x00000003,               // Port device (serial or parallel). This structure is a DEV_BROADCAST_PORT structure.
-            DBT_DEVTYP_VOLUME = 0x00000002,             // Logical volume. This structure is a DEV_BROADCAST_VOLUME structure.
-
-            SIZE_OF_DBH = 12,   // sizeof(DEV_BROADCAST_HDR)
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct DEV_BROADCAST_HDR
-        {
-            internal UInt32 dbch_size;
-            internal UInt32 dbch_devicetype;
-            internal UInt32 dbch_reserved;
-        };
+        }       
       
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        internal struct DEV_BROADCAST_OEM
-        {
-            internal UInt32 dbch_size;
-            internal UInt32 dbch_devicetype;
-            internal UInt32 dbch_reserved;            
-            internal uint dbco_identifier;
-            internal uint dbco_suppfunc;
-        };
-
-       
         /// <summary>
         /// Registers a window to receive notifications when USB devices are plugged or unplugged.
         /// </summary>
@@ -197,12 +161,8 @@ namespace UsbNotify
             IntPtr filter = Marshal.AllocHGlobal(dbi.dbch_size);
             Marshal.StructureToPtr(dbi, filter, true);
 
-            //notificationHandle = RegisterDeviceNotification(windowHandle, filter, DEVICE_NOTIFY_GUID);
             notificationHandle = RegisterDeviceNotificationW(windowHandle, filter, DEVICE_NOTIFY_GUID);
         }
-
-        const int DEVICE_NOTIFY_ALL_INTERFACE_CLASSES = 0x00000004;
-        const int DEVICE_NOTIFY_GUID = 0x00000000;
 
         /// <summary>
         /// Unregisters the window for USB device notifications
@@ -223,28 +183,5 @@ namespace UsbNotify
 
         [DllImport("user32.dll")]
         private static extern bool UnregisterDeviceNotification(IntPtr handle);
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
-        public struct DEV_BROADCAST_DEVICEINTERFACE
-        {
-            internal int dbch_size;
-            internal int dbch_devicetype;
-            internal int dbch_reserved;
-            internal Guid dbcc_classguid;
-            internal short Name;
-        };    
-    }
-
-    public enum WndMessage
-    {
-        WM_DEVICECHANGE = 0x0219, // device change event   
-        WM_ENDSESSION = 0x0016, // windows end end session / shutdown
-    }
-
-    public enum EndSessionReason:uint
-    {
-        ENDSESSION_CLOSEAPP = 0x0001,
-        ENDSESSION_CRITICAL = 0x40000000,
-        ENDSESSION_LOGOFF = 0x80000000
     }
 }
