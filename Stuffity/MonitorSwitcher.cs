@@ -39,6 +39,26 @@ namespace MonitorSwitcher
             return true;
         }
 
+        public void PowerOff(IEnumerable<MonitorSetting> sources)
+        {
+            if (!CheckMonitorsExist(sources))
+                Init();
+            foreach (var s in sources)
+            {
+                Monitor mon;
+                if (!monitors.TryGetValue(s.MonitorName, out mon))
+                {
+                    Console.WriteLine($"oopsy, couldn't find {s.MonitorName}");
+                    continue;
+                }
+
+                var source = new PowerModel(mon, vcpLogic);
+
+                if (source.Off())
+                    continue;
+            }
+        }
+
         public void SwitchTo(IEnumerable<MonitorSetting> sources, int depth = 0)
         {
             if (SkipForAFewSecs())
@@ -49,7 +69,6 @@ namespace MonitorSwitcher
 
             bool switchFailed = false;
 
-
             foreach (var s in sources)
             {
                 Monitor mon;
@@ -58,9 +77,12 @@ namespace MonitorSwitcher
                     Console.WriteLine($"oopsy, couldn't find {s.MonitorName}");
                     continue;
                 }
+
                 var source = new InputSourceModel(s.InputId, mon, vcpLogic);
+
                 if (source.Select())
                     continue;
+
                 switchFailed = true;
             }
 
@@ -95,12 +117,12 @@ namespace MonitorSwitcher
 
                 foreach (var source in mon.InputSources)
                 {
-                    var maskedSource = source & 0x1f;
-                    var sourceModel = new InputSourceModel(maskedSource, mon, vcpLogic);
+                    var sourceModel = new InputSourceModel(source, mon, vcpLogic);
 
+                    var maskedSource = (uint)source & 0x1f;
                     sb.Append($"\t{maskedSource}\t{sourceModel.Name}");
 
-                    if ((currentInput.CurrentValue & 0x1f) == source)
+                    if ((currentInput.CurrentValue & 0x1f) == maskedSource)
                         sb.AppendLine("*");
                     else
                         sb.AppendLine();

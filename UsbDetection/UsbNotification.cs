@@ -8,7 +8,7 @@ namespace UsbNotify
     {
         public const int DbtDevicearrival = 0x8000; // system detected a new device        
         public const int DbtDeviceremovecomplete = 0x8004; // device is gone      
-        public const int WmDevicechange = 0x0219; // device change event      
+        
         private const int DBT_DEVTYP_DEVICEINTERFACE = 5;
         public static readonly Guid GUID_DEVINTERFACE_USB_DEVICE = new Guid("A5DCBF10-6530-11D2-901F-00C04FB951ED"); // USB devices
         public static readonly Guid KeyboardDeviceInterface = new Guid("884b96c3-56ef-11d1-bc8c-00a0c91405dd"); // Keyboard
@@ -38,7 +38,7 @@ namespace UsbNotify
                 RegisterUsbDeviceNotification(MessageEvents.WindowHandle, deviceClass);
             }
             
-            MessageEvents.WatchMessage(WmDevicechange);
+            MessageEvents.WatchMessage((int)WndMessage.WM_DEVICECHANGE);
             MessageEvents.MessageReceived += MessageEvents_MessageReceived;
         }
 
@@ -142,10 +142,7 @@ namespace UsbNotify
             return sb.ToString();
         }
 
-        public enum WndMessage
-        {
-            WM_DEVICECHANGE = 0x0219, // device change event   
-        }
+       
 
         public enum WM_DEVICECHANGE
         {
@@ -236,5 +233,18 @@ namespace UsbNotify
             internal Guid dbcc_classguid;
             internal short Name;
         };    
+    }
+
+    public enum WndMessage
+    {
+        WM_DEVICECHANGE = 0x0219, // device change event   
+        WM_ENDSESSION = 0x0016, // windows end end session / shutdown
+    }
+
+    public enum EndSessionReason:uint
+    {
+        ENDSESSION_CLOSEAPP = 0x0001,
+        ENDSESSION_CRITICAL = 0x40000000,
+        ENDSESSION_LOGOFF = 0x80000000
     }
 }

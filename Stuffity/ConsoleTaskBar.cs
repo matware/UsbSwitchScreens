@@ -15,7 +15,9 @@ namespace MonitorSwitcher
             
         }
 
-        public void Init(Dictionary<string,Action> menuItems)
+        public bool ExitRequested { get; private set; } = false;
+
+        public void Init(Dictionary<string,Action> menuItems, Action power = null)
         {
             var contextMenu = new ContextMenuStrip();
 
@@ -30,8 +32,11 @@ namespace MonitorSwitcher
             }
 
             showHideItem = contextMenu.Items.Add("Hide", null, ToggleClicked);
-            
-            contextMenu.Items.Add("Exit", null, (s, e) => { Application.Exit(); });
+
+            contextMenu.Items.Add("Exit", null, (s, e) => {
+                ExitRequested = true;
+                Application.Exit();
+            });
             notifyIcon.ContextMenuStrip = contextMenu;
 
             notifyIcon.Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath);
@@ -50,7 +55,7 @@ namespace MonitorSwitcher
         private void ToggleClicked(object sender, EventArgs e)
         {
             Switch(!showing);
-        }
+        }      
 
         private void Switch(bool newState)
         {

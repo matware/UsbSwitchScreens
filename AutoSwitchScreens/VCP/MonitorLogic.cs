@@ -7,8 +7,6 @@ namespace UsbNotify
 {
     public class MonitorLogic
     {
-
-
         private ICapabilitiesLogic capabilitiesLogic;
 
         public MonitorLogic(ICapabilitiesLogic capabilitiesLogic)
@@ -52,10 +50,6 @@ namespace UsbNotify
 
             return physicalMonitors;
         }
-
-
-
-
 
 
         [DllImport("dxva2.dll", EntryPoint = "GetNumberOfPhysicalMonitorsFromHMONITOR")]

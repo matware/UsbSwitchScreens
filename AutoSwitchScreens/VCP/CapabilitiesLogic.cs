@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace UsbNotify
 {
-
     static class MonToolConfiguration
     {
         public static readonly int REQUEST_TIMEOUT = 200;
@@ -15,7 +13,6 @@ namespace UsbNotify
 
     public class CapabilitiesLogic : ICapabilitiesLogic
     {
-
 
         enum VcpState
         {
@@ -74,21 +71,18 @@ namespace UsbNotify
 
         private Monitor ParseVcp(string capabilityString, Monitor monitor)
         {
-
             capabilityString = PrepareCapabilityString(capabilityString);
             var capabilities = new List<uint>();
-            var inputSources = new List<uint>();
+            var inputSources = new List<InputSource>();
             var colorPresets = new List<uint>();
-
 
             ParseState parseState = ParseState.DEFAULT;
             VcpState vcpState = VcpState.DEFAULT;
             uint? vcpCode = null;
             string model = "";
+
             foreach (string str in capabilityString.Split(' '))
             {
-
-
                 ParseState beforeCheckParseState = parseState;
 
                 switch (str)
@@ -159,7 +153,7 @@ namespace UsbNotify
                                             capabilities.Add(vcpCode.Value);
                                             break;
                                         case VcpState.INPUT_SOURCE:
-                                            inputSources.Add(vcpCode.Value);
+                                            inputSources.Add((InputSource)vcpCode.Value);
                                             break;
                                         case VcpState.COLOR_PRESET:
                                             colorPresets.Add(vcpCode.Value);
@@ -214,12 +208,6 @@ namespace UsbNotify
         }
 
 
-
-
-
-
-
-
         [DllImport("dxva2.dll", EntryPoint = "GetCapabilitiesStringLength")]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static extern bool GetCapabilitiesStringLength(IntPtr hMonitor, ref uint pdwCapabilitiesStringLengthInCharacters);
@@ -249,7 +237,7 @@ namespace UsbNotify
         public PHYSICAL_MONITOR PhysicalMonitor { get; set; }
         public string Model { get; set; }
         public List<uint> Capabilitys { get; set; }
-        public List<uint> InputSources { get; set; }
+        public List<InputSource> InputSources { get; set; }
         public List<uint> ColorPresets { get; set; }
 
         public override string ToString()
@@ -259,6 +247,10 @@ namespace UsbNotify
     }
 
 
+    /// <summary>
+    /// Have a look here:
+    /// https://www.ddcutil.com/cap_u3011_verbose_output/
+    /// </summary>
     [Flags]
     public enum VCPFeature
     {
@@ -283,7 +275,9 @@ namespace UsbNotify
         INPUT_SOURCE = 0x60,
 
         // Audio Function
-        SPEAKER_VOLUME = 0x62
+        SPEAKER_VOLUME = 0x62,
+
+        MONITORPOWER = 0xD6
     }
 
     [StructLayout(LayoutKind.Sequential)]

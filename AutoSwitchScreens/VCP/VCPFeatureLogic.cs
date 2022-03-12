@@ -1,13 +1,11 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
-using System.Windows.Input;
 
 namespace UsbNotify
 {
     public class VCPFeatureValue
     {
-
         public uint CurrentValue { get; set; }
         public uint MaximumValue { get; set; }
     }
@@ -34,16 +32,16 @@ namespace UsbNotify
 
         }
 
-        public bool SetVCPFeature(Monitor monitor, VCPFeature vcpFeature, uint newValue)
+        public bool SetValue(Monitor monitor, VCPFeature vcpFeature, uint newValue)
         {
-            bool result = SetVCPFeature(monitor.PhysicalMonitor.hPhysicalMonitor, (byte)vcpFeature, newValue);
-
-            //Bugfix for slow Monitors
-            for (int i = 0; i < MonToolConfiguration.REQUEST_REPEATS && result == false; i++)
+            bool result;
+            int retry = 0;
+            //For slow Monitors
+            do
             {
-                System.Threading.Thread.Sleep(MonToolConfiguration.REQUEST_TIMEOUT);
-                result = SetVCPFeature(monitor.PhysicalMonitor.hPhysicalMonitor, (byte)vcpFeature, newValue);
-            }
+                result = SetVCPFeature(monitor.PhysicalMonitor.hPhysicalMonitor, (byte)vcpFeature, (uint)newValue & 0x1f);
+            } while (!result && retry++ < MonToolConfiguration.REQUEST_REPEATS);
+
             return result;
         }
 
@@ -62,109 +60,6 @@ namespace UsbNotify
 
     }
 
-    public class ChangeInputSourceCommand : ICommand
-    {
-        public event EventHandler CanExecuteChanged;
-
-        private InputSourceModel inputSourceModel;
-
-        public ChangeInputSourceCommand(InputSourceModel inputSourceModel)
-
-        {
-            this.inputSourceModel = inputSourceModel;
-        }
-
-        public bool CanExecute(object parameter)
-        {
-            return true;
-        }
-
-        public void Execute(object parameter)
-        {
-            inputSourceModel.Select();
-        }
-    }
-
-    public class InputSourceModel
-    {
-
-        private uint inputSource;
-        private VCPFeatureLogic vcpFeatureLogic;
-        private Monitor monitor;
-
-        public InputSourceModel(uint inputSource, Monitor monitor, VCPFeatureLogic vcpFeatureLogic)
-        {
-            this.inputSource = inputSource & 0x1f;
-            this.vcpFeatureLogic = vcpFeatureLogic;
-            this.monitor = monitor;
-            ChangeInputSourceCommand = new ChangeInputSourceCommand(this);
-        }
-
-        /*
-        Byte: SL Input Definition
-01h Analog video(R/G/B) 1
-02h Analog video(R/G/B) 2
-03h Digital video(TMDS) 1 DVI 1
-04h Digital video(TMDS) 2 DVI 2
-05h Composite video 1
-06h Composite video 2
-07h S-video 1
-08h S-video 2
-09h Tuner 1
-0Ah Tuner 2
-0Bh Tuner 3
-0Ch Component video(YPbPr / YCbCr) 1
-0Dh Component video(YPbPr / YCbCr) 2
-0Eh Component video(YPbPr / YCbCr) 3
-0Fh DisplayPort 1
-10h DisplayPort 2
-11h Digital Video(TMDS) 3 HDMI 1
-12h Digital Video(TMDS) 4 HDMI 2
-        */
-
-        public string Name
-        {
-            get
-            {
-                return ((InputSource)inputSource).ToString();
-            }
-        }
-
-        public ChangeInputSourceCommand ChangeInputSourceCommand { get; }
-
-        public bool Select()
-        {
-            if(!vcpFeatureLogic.SetVCPFeature(monitor, VCPFeature.INPUT_SOURCE, inputSource))
-            {
-                Console.Write($"Failed to switch to source {inputSource} on monitor {monitor}");
-                return false;
-            }
-            return true;
-        }
-
-    }
-
-
-    [Flags]
-    public enum InputSource
-    {
-        ANALOG_VIDEO1 = 0x01,
-        ANALOG_VIDEO2 = 0x02,
-        DVI1 = 0x03,
-        DVI2 = 0x04,
-        COMPOSITE1 = 0x05,
-        COMPOSITE2 = 0x06,
-        SVIDEO1 = 0x07,
-        SVIDEO2 = 0x08,
-        COMPOSITE1_YprPb = 0x0c,
-        COMPOSITE2_YprPb = 0x0d,
-
-        DISPLAY_PORT1 = 0x0F,
-        DISPLAY_PORT2 = 0x10,
-        HDMI1 = 0x11,
-        HDMI2 = 0x12,
-    }
-
     public class BaseModel : INotifyPropertyChanged
     {
         public event PropertyChangedEventHandler PropertyChanged;
@@ -181,7 +76,6 @@ namespace UsbNotify
 
     public class VCPFeatureModel : BaseModel
     {
-
         private VCPFeature vcpFeature;
         private Monitor monitor;
         private VCPFeatureLogic vcpFeatureLogic;
@@ -202,19 +96,13 @@ namespace UsbNotify
 
         public uint CurrentValue
         {
-
             get
             {
-
                 if (!isCapable)
-                {
                     return 0;
-                }
 
                 if (vcpFeatureValue == null)
-                {
                     GetVcpFeatureValue();
-                }
 
                 return vcpFeatureValue.CurrentValue;
             }
@@ -225,10 +113,9 @@ namespace UsbNotify
                 {
                     vcpFeatureValue.CurrentValue = value;
 
-                    if (!vcpFeatureLogic.SetVCPFeature(monitor, vcpFeature, value))
-                    {
+                    if (!vcpFeatureLogic.SetValue(monitor, vcpFeature, value))
                         GetVcpFeatureValue();
-                    }
+                
                     OnPropertyChanged(nameof(CurrentValue));
                 }
             }

@@ -9,6 +9,7 @@ namespace UsbNotify
     {
         private static SynchronizationContext _context;
         public static event Action<Message> MessageReceived;
+        public static event Action FormClosing;
 
         private static MessageWindow _window;
         private static IntPtr _windowHandle;        
@@ -41,6 +42,7 @@ namespace UsbNotify
                         Thread t = new Thread((ThreadStart)delegate
                         {
                             _window = new MessageWindow();
+                            _window.FormClosing += _window_FormClosing;
                             _windowHandle = _window.Handle;
                             mre.Set();
                             Application.Run();
@@ -55,25 +57,30 @@ namespace UsbNotify
             }
         }
 
+        private static void _window_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            FormClosing?.Invoke();
+        }
+
         private class MessageWindow : Form
         {
             private ReaderWriterLock _lock = new ReaderWriterLock();
-            private Dictionary<int, bool> _messageSet =
-                new Dictionary<int, bool>();
+            private HashSet<int> _messageSet =new HashSet<int>();
 
             public void RegisterEventForMessage(int messageID)
             {
                 _lock.AcquireWriterLock(Timeout.Infinite);
-                _messageSet[messageID] = true;
+                _messageSet.Add(messageID);
                 _lock.ReleaseWriterLock();
             }
 
             protected override void WndProc(ref Message m)
             {
                 _lock.AcquireReaderLock(Timeout.Infinite);
-                bool handleMessage = _messageSet.ContainsKey(m.Msg);
+                bool handleMessage = _messageSet.Contains(m.Msg);
                 _lock.ReleaseReaderLock();
-
+                if(m.Msg == 0x16)
+                    System.IO.File.WriteAllText("boom0.txt", $"boom0 {m.Msg} {m.WParam} {m.LParam}");
                 if (handleMessage)
                 {
                     MessageEvents._context.Post(delegate (object state)
