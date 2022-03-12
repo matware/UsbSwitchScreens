@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Text;
 
 namespace UsbNotify
 {
@@ -34,11 +33,11 @@ namespace UsbNotify
 
         public static void RegisterUsbDeviceNotification(params Guid[] deviceClasses)
         {
-            foreach(var deviceClass in deviceClasses)
+            foreach (var deviceClass in deviceClasses)
             {
                 RegisterUsbDeviceNotification(MessageEvents.WindowHandle, deviceClass);
             }
-            
+
             MessageEvents.WatchMessage((int)WndMessage.WM_DEVICECHANGE);
             MessageEvents.MessageReceived += MessageEvents_MessageReceived;
         }
@@ -71,7 +70,7 @@ namespace UsbNotify
                         {
                             var bytes = new byte[dbh.dbch_size - (int)WM_DEVICECHANGE.SIZE_OF_DBH];
                             Marshal.Copy(m.LParam + (int)WM_DEVICECHANGE.SIZE_OF_DBH, bytes, 0, bytes.Length);
-                            var name = MarshalString<DEV_BROADCAST_HDR>(dbh.dbch_size, m.LParam);
+                            var name = m.LParam.MarshalString<DEV_BROADCAST_HDR>(dbh.dbch_size);
                             OnUsbDevicesChanged(name);
                         }
                         break;
@@ -97,7 +96,7 @@ namespace UsbNotify
                                     KeyboardDisconnected(name);
                             }
 
-                            name = MarshalString<DEV_BROADCAST_DEVICEINTERFACE>(dbh.dbch_size, m.LParam);
+                            name = m.LParam.MarshalString<DEV_BROADCAST_DEVICEINTERFACE>(dbh.dbch_size);
                             OnUsbDevicesChanged($"Size - {xx.dbch_size} Name - {name} - Type :{xx.dbch_devicetype} {xx.dbcc_classguid} {action}");
                         }
                         break;
@@ -112,37 +111,13 @@ namespace UsbNotify
                         OnUsbDevicesChanged($"wot! 0X{dbh.dbch_devicetype.ToString("X8")}");
                         break;
                 }
-            }catch(Exception ex)
+            } catch (Exception ex)
             {
                 Console.WriteLine($"Opps something went wrong with a usb even. \n{ex}");
             }
         }
 
-        private static string MarshalString<T>(uint messageSize, IntPtr lparam)
-        {
-            int sizeofStruct = Marshal.SizeOf<T>();
-            var size = messageSize - sizeofStruct;
-            
-            if (size < 0)
-                throw new ArgumentOutOfRangeException($"Message is is wack sizeofStruct:{sizeofStruct}, messageSize{messageSize}");
 
-            if(size > 2048)
-                throw new ArgumentOutOfRangeException($"Message is is wack sizeofStruct:{sizeofStruct}, messageSize{messageSize}");
-            
-            var bytes = new byte[size];
-
-            Marshal.Copy(lparam + sizeofStruct - sizeof(short) /*This is the string pointer itself*/, bytes, 0, bytes.Length);
-            StringBuilder sb = new StringBuilder();
-            foreach(var b in bytes) 
-            {
-                if (b == 0)
-                    break;
-                sb.Append(Convert.ToChar(b));
-            }
-
-            return sb.ToString();
-        }       
-      
         /// <summary>
         /// Registers a window to receive notifications when USB devices are plugged or unplugged.
         /// </summary>
