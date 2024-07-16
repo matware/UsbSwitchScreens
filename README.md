@@ -7,3 +7,5 @@ Other things of note:
 * It does fun things with VESA commands that I haven’t seen done much before.
 * It’s a console application that can listen to windows messages, which I haven’t seen done much before.
 * It handles USB device connection events in C#, which I haven’t seen done much before (and is a fair PITA)
+
+This project is licensed under WTFPL.

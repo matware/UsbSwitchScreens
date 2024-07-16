@@ -35,13 +35,16 @@ namespace MonitorSwitcher
             consoleHelper.WriteStatus("\nMonitor Status\n");
             consoleHelper.WriteStatus(switcher.ToString());
 
-            UsbNotification.RegisterUsbDeviceNotification(UsbNotification.KeyboardDeviceInterface);
+            UsbNotification.RegisterUsbDeviceNotification(UsbNotification.GUID_DEVINTERFACE_USB_DEVICE);
             UsbNotification.KeyboardConnected += UsbNotification_KeyboardConnected;
             UsbNotification.KeyboardDisconnected += UsbNotification_KeyboardDisconnected;
             MessageEvents.WatchMessage((int)WndMessage.WM_ENDSESSION);
             MessageEvents.MessageReceived += MessageEvents_MessageReceived;
             MessageEvents.FormClosing += MessageEvents_ShutdownRequested;
-            taskBarMenu.HideConsole();
+
+            if(!Debugger.IsAttached)
+                taskBarMenu.HideConsole();
+
             Application.Run();
         }
 
