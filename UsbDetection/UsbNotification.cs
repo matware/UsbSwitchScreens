@@ -53,8 +53,19 @@ namespace UsbNotify
                 RegisterUsbDeviceNotification(MessageEvents.WindowHandle, deviceClass);
             }
 
-            MessageEvents.WatchMessage((int)WndMessage.WM_DEVICECHANGE);
-            MessageEvents.MessageReceived += MessageEvents_MessageReceived;
+
+            MessageEvents.DeviceConnected += MessageEvents_DeviceConnected; ;
+        }
+
+        private static void MessageEvents_DeviceConnected(UsbConnectionEventData deviceConnectedData)
+        {
+            if (deviceConnectedData == null)
+                return;
+
+            if (deviceConnectedData.Event != UsbEvent.Connected)
+                return;
+
+            KeyboardConnected(deviceConnectedData.VID);
         }
 
         private static void OnUsbDevicesChanged(string s)
@@ -87,13 +98,13 @@ namespace UsbNotify
             return true;
         }
 
-        private static void MessageEvents_MessageReceived(System.Windows.Forms.Message m)
+    
+
+        public static void GetDeviceChangeMessage(System.Windows.Forms.Message m)
         {
             try
             {
-                if (!IsConnectionMessage(m))
-                    return;
-
+                if (!IsConnectionMessage(m)) return;
                 var dbh = Marshal.PtrToStructure<DEV_BROADCAST_HDR>(m.LParam);
 
                 switch ((WM_DEVICECHANGE)dbh.dbch_devicetype)
@@ -112,7 +123,7 @@ namespace UsbNotify
                     case WM_DEVICECHANGE.DBT_DEVTYP_DEVICEINTERFACE:
                         {
                             Trace("Message WM_DEVICECHANGE - DBT_DEVTYP_DEVICEINTERFACE");
-                            var deviceClass = (DEV_BROADCAST_DEVICEINTERFACE)Marshal.PtrToStructure(m.LParam, typeof(DEV_BROADCAST_DEVICEINTERFACE));
+                            var deviceClass = Marshal.PtrToStructure<DEV_BROADCAST_DEVICEINTERFACE>(m.LParam);
                             string name = "";
 
                             var action = "unkown";

@@ -15,17 +15,9 @@ namespace UsbNotify
                 throw new ArgumentOutOfRangeException($"Message is wack sizeofStruct:{sizeofStruct}, messageSize{messageSize}");
 
             var bytes = new byte[size];
-
-            Marshal.Copy(lparam + sizeofStruct - sizeof(short) /*This is the string pointer itself*/, bytes, 0, bytes.Length);
-            StringBuilder sb = new StringBuilder();
-            foreach (var b in bytes)
-            {
-                if (b == 0)
-                    break;
-                sb.Append(Convert.ToChar(b));
-            }
-
-            return sb.ToString();
+            IntPtr str_ptr = lparam + sizeofStruct - sizeof(short);
+            
+            return Marshal.PtrToStringAuto(str_ptr);
         }
     }
 }

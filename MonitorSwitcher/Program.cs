@@ -35,11 +35,14 @@ namespace MonitorSwitcher
             consoleHelper.WriteStatus("\nMonitor Status\n");
             consoleHelper.WriteStatus(switcher.ToString());
 
-            UsbNotification.RegisterUsbDeviceNotification(UsbNotification.GUID_DEVINTERFACE_USB_DEVICE);
+            // All USB devices
+            //UsbNotification.RegisterUsbDeviceNotification(UsbNotification.GUID_DEVINTERFACE_USB_DEVICE);
+            // Keybaords
+            UsbNotification.RegisterUsbDeviceNotification(UsbNotification.KeyboardDeviceInterface);
             UsbNotification.KeyboardConnected += UsbNotification_KeyboardConnected;
             UsbNotification.KeyboardDisconnected += UsbNotification_KeyboardDisconnected;
-            MessageEvents.WatchMessage((int)WndMessage.WM_ENDSESSION);
-            MessageEvents.MessageReceived += MessageEvents_MessageReceived;
+            
+            MessageEvents.Shutdown += MessageEvents_MessageReceived;
             MessageEvents.FormClosing += MessageEvents_ShutdownRequested;
 
             if(!Debugger.IsAttached)
@@ -60,11 +63,8 @@ namespace MonitorSwitcher
             switcher.PowerOff(settings.GetDefaultProfile());
         }
 
-        private static void MessageEvents_MessageReceived(Message msg)
-        {
-            if ((WndMessage)msg.Msg != WndMessage.WM_ENDSESSION)
-                return;
-
+        private static void MessageEvents_MessageReceived()
+        {            
             if (Debugger.IsAttached)
             {
                 File.WriteAllText("windows_shutdown.txt", $"{DateTime.Now}");
