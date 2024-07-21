@@ -23,15 +23,6 @@ namespace UsbNotify
         public static event Action<string> KeyboardConnected;
         public static event Action<string> KeyboardDisconnected;
 
-        public static void RegisterUsbDeviceNotification()
-        {
-            RegisterUsbDeviceNotification(
-                //GUID_DEVINTERFACE_USB_DEVICE,
-                KeyboardDeviceInterface
-                //MouseDeviceInterface
-                //GUID_DEVINTERFACE_HID
-                );
-        }
 
         public static void Log(string s)
         {
@@ -97,80 +88,6 @@ namespace UsbNotify
             }
             return true;
         }
-
-    
-
-        public static void GetDeviceChangeMessage(System.Windows.Forms.Message m)
-        {
-            try
-            {
-                if (!IsConnectionMessage(m)) return;
-                var dbh = Marshal.PtrToStructure<DEV_BROADCAST_HDR>(m.LParam);
-
-                switch ((WM_DEVICECHANGE)dbh.dbch_devicetype)
-                {
-
-                    case WM_DEVICECHANGE.DBT_DEVTYP_PORT:
-                        {
-                            Trace("Message WM_DEVICECHANGE - DBT_DEVTYP_PORT");
-                            var bytes = new byte[dbh.dbch_size - (int)WM_DEVICECHANGE.SIZE_OF_DBH];
-                            Marshal.Copy(m.LParam + (int)WM_DEVICECHANGE.SIZE_OF_DBH, bytes, 0, bytes.Length);
-                            var name = m.LParam.MarshalString<DEV_BROADCAST_HDR>(dbh.dbch_size);
-                            OnUsbDevicesChanged(name);
-                        }
-                        break;
-
-                    case WM_DEVICECHANGE.DBT_DEVTYP_DEVICEINTERFACE:
-                        {
-                            Trace("Message WM_DEVICECHANGE - DBT_DEVTYP_DEVICEINTERFACE");
-                            var deviceClass = Marshal.PtrToStructure<DEV_BROADCAST_DEVICEINTERFACE>(m.LParam);
-                            string name = "";
-
-                            var action = "unkown";
-
-                            Trace($"Message DBT_DEVTYP_DEVICEINTERFACE - {dbh.dbch_devicetype.ToString("X8")}");
-
-                            if ((int)WM_DEVICECHANGE.DBT_DEVICEARRIVAL == (int)m.WParam)
-                            {
-                                action = "connected";
-                                if (KeyboardConnected != null)
-                                    KeyboardConnected(name);
-                            }
-
-                            if ((int)WM_DEVICECHANGE.DBT_DEVICEREMOVECOMPLETE == (int)m.WParam)
-                            {
-                                action = "removed";
-                                if (KeyboardDisconnected != null)
-                                    KeyboardDisconnected(name);
-                            }
-
-                            name = m.LParam.MarshalString<DEV_BROADCAST_DEVICEINTERFACE>(dbh.dbch_size);
-                            OnUsbDevicesChanged($"Size - {deviceClass.dbch_size} Name - {name} - Type :{deviceClass.dbch_devicetype} {deviceClass.dbcc_classguid} {action}");
-                        }
-                        break;
-
-                    case WM_DEVICECHANGE.DBT_DEVTYP_OEM:
-                        Trace("Message WM_DEVICECHANGE - DBT_DEVTYP_OEM");
-                        OnUsbDevicesChanged($"OEM 0X{dbh.dbch_devicetype.ToString("X8")}");
-                        break;
-
-                    case WM_DEVICECHANGE.DBT_DEVTYP_VOLUME:
-                        Trace("Message WM_DEVICECHANGE - DBT_DEVTYP_VOLUME");
-                        OnUsbDevicesChanged($"VOLUME 0X{dbh.dbch_devicetype.ToString("X8")}");
-                        break;
-
-                    default:
-                        Trace($"Message WM_DEVICECHANGE - {dbh.dbch_devicetype.ToString("X8")}");
-                        OnUsbDevicesChanged($"wot! 0X{dbh.dbch_devicetype.ToString("X8")}");
-                        break;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Opps something went wrong with a usb even. \n{ex}");
-            }
-        }
-
 
         /// <summary>
         /// Registers a window to receive notifications when USB devices are plugged or unplugged.

@@ -51,10 +51,7 @@ namespace UsbNotify
         private static object _lock = new object();
 
         private static void EnsureInitialized()
-        {
-            
-            
-
+        {            
             lock (_lock)
             {
                 if (window == null)
@@ -114,7 +111,6 @@ namespace UsbNotify
                         return false;
                 }
 
-
                 if (m.LParam == IntPtr.Zero)
                 {
                     return false;
@@ -172,38 +168,42 @@ namespace UsbNotify
                 {
                     if (handleMessage)
                     {
-                        Action? a = null;
+                        Action? eventData = null;
                         switch ((WndMessage)m.Msg)
                         {
                             case WndMessage.WM_ENDSESSION:
-                                a = MessageEvents.shutdown;
-                                shutdown?.Invoke();
+                                eventData = MessageEvents.shutdown;
                                 break;
+
                             case WndMessage.WM_DEVICECHANGE:
 
-                                if (IsConnectionMessage(m))
+                                if (!IsConnectionMessage(m))
+                                    break;
+
+                                var deviceConnectedData = GetDeviceChangeMessage(m);
+
+                                if (deviceConnectedData == null)
+                                    break;
+
+                                if (deviceConnectedData.Event != UsbEvent.Connected)
+                                    break;
+
+                                var ev = MessageEvents.deviceConnected;
+                                eventData = () =>
                                 {
-                                    var deviceConnectedData = GetDeviceChangeMessage(m);
-                                    if (deviceConnectedData != null && deviceConnectedData.Event == UsbEvent.Connected)
-                                    {
-                                        var ev = MessageEvents.deviceConnected;
-                                        a = () =>
-                                        {
-                                            Console.WriteLine(deviceConnectedData.Event);
-                                            ev?.Invoke(deviceConnectedData);
-                                        };
-                                    }
-                                }
+                                    ev?.Invoke(deviceConnectedData);
+                                };
+
 
                                 break;
                         }
-                        if (a != null)
+                        if (eventData != null)
                         {
                             MessageEvents.context.Post(delegate (object state)
                             {
                                 var action = (Action?)state;
                                 action?.Invoke();
-                            }, a);
+                            }, eventData);
                         }
                     }
                 }
